@@ -1,4 +1,6 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+mod jwt_guard;
+use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder};
+use jwt_guard::verify_auth_token;
 
 #[get("/")]
 async fn home() -> impl Responder {
@@ -15,12 +17,17 @@ async fn test_service_fn() -> impl Responder {
     HttpResponse::Ok().body("test service endpoint")
 }
 
-#[get("/login")]
+#[post("/testservicepost")]
+async fn test_service_post_fn() -> impl Responder {
+    HttpResponse::Ok().body("test service endpoint")
+}
+
+#[post("/login")]
 async fn login_fn() -> impl Responder {
     HttpResponse::Ok().body("Login Endpoint!")
 }
 
-#[get("/signup")]
+#[post("/signup")]
 async fn signup_fn() -> impl Responder {
     HttpResponse::Ok().body("signup Endpoint!")
 }
@@ -29,10 +36,14 @@ async fn signup_fn() -> impl Responder {
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
+            .service(web::scope("/auth").service(login_fn).service(signup_fn))
+            .service(
+                web::scope("service")
+                    .guard(guard::fn_guard(verify_auth_token))
+                    .service(test_service_fn)
+                    .service(test_service_post_fn),
+            )
             .service(home)
-            .service(login_fn)
-            .service(signup_fn)
-            .service(test_service_fn)
             .service(get_usage_fn)
     })
     .bind(("127.0.0.1", 8080))?
