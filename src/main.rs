@@ -1,4 +1,7 @@
+mod encrypt;
+mod jwt;
 mod jwt_guard;
+
 use actix_web::{get, guard, post, web, App, HttpResponse, HttpServer, Responder};
 use jwt_guard::verify_auth_token;
 
@@ -38,7 +41,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(web::scope("/auth").service(login_fn).service(signup_fn))
             .service(
-                web::scope("service")
+                web::scope("/service")
                     .guard(guard::fn_guard(verify_auth_token))
                     .service(test_service_fn)
                     .service(test_service_post_fn),
